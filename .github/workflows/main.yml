@@ -57,10 +57,15 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Stage all new zips
+      - name: Stage built zip
         run: |
-          git add unknown-linux.zip unknown-windows.zip unknown-macos.zip
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            git add unknown-linux.zip
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            git add unknown-macos.zip
+          else
+            git add unknown-windows.zip
+          fi
 
       - name: Commit updated executables
         run: |
