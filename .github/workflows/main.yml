@@ -71,10 +71,10 @@ jobs:
         run: |
           git commit -m "Update cross-platform executables" || echo "No changes to commit"
 
-      - name: Upload artifacts
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: built-executables
+          name: unknown-${{ runner.os }}       # linux, windows, macos
           path: |
             unknown-linux.zip
             unknown-windows.zip
