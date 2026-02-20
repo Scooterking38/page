@@ -33,18 +33,25 @@ jobs:
         if: runner.os == 'Windows'
         run: Remove-Item -Path "unknown-linux.zip","unknown-windows.zip","unknown-macos.zip" -Force -ErrorAction SilentlyContinue
 
-      # Build the executable
-      - name: Build executable (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
           pyinstaller --onefile --windowed unknown.py
-          zip -j unknown-${{ runner.os == 'Linux' && 'linux' || 'macos' }}.zip dist/unknown
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unknown-${{ runner.os == 'Linux' && 'linux' || 'macos' }}
+          path: dist/unknown   # single file
 
+      # Windows
       - name: Build executable (Windows)
         if: runner.os == 'Windows'
         run: |
           pyinstaller --onefile --windowed unknown.py
-          powershell Compress-Archive -Path dist\unknown.exe -DestinationPath unknown-windows.zip
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unknown-windows
+          path: dist\unknown.exe   # single file
 
       # Upload artifact (one per OS)
       - name: Upload artifact
