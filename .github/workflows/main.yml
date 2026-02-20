@@ -16,14 +16,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Cache Python packages
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.os == 'windows-latest' && '%LOCALAPPDATA%\\pip\\Cache' || runner.os == 'macos-latest' && '~/Library/Caches/pip' || '~/.cache/pip' }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -32,50 +24,31 @@ jobs:
       - name: Install dependencies
         run: pip install --upgrade pip pyinstaller
 
-      - name: Remove old executables
-        run: |
-          if [[ "${{ runner.os }}" == "Linux" ]] || [[ "${{ runner.os }}" == "macOS" ]]; then
-            rm -f unknown-linux.zip unknown-windows.zip unknown-macos.zip || true
-          else
-            Remove-Item -Path "unknown-linux.zip","unknown-windows.zip","unknown-macos.zip" -Force -ErrorAction SilentlyContinue
-          fi
+      # Remove old builds (OS-specific)
+      - name: Remove old executables (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: rm -f unknown-linux.zip unknown-macos.zip unknown-windows.zip || true
 
-      - name: Build executable
-        run: |
-          if [[ "${{ runner.os }}" == "Linux" ]]; then
-            pyinstaller --onefile --windowed unknown.py
-            zip -j unknown-linux.zip dist/unknown
-          elif [[ "${{ runner.os }}" == "macOS" ]]; then
-            pyinstaller --onefile --windowed unknown.py
-            zip -j unknown-macos.zip dist/unknown
-          else
-            pyinstaller --onefile --windowed unknown.py
-            powershell Compress-Archive -Path dist\unknown.exe -DestinationPath unknown-windows.zip
-          fi
+      - name: Remove old executables (Windows)
+        if: runner.os == 'Windows'
+        run: Remove-Item -Path "unknown-linux.zip","unknown-windows.zip","unknown-macos.zip" -Force -ErrorAction SilentlyContinue
 
-      - name: Configure Git
+      # Build the executable
+      - name: Build executable (Linux/macOS)
+        if: runner.os != 'Windows'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-      - name: Stage built zip
-        run: |
-          if [[ "${{ runner.os }}" == "Linux" ]]; then
-            git add unknown-linux.zip
-          elif [[ "${{ runner.os }}" == "macOS" ]]; then
-            git add unknown-macos.zip
-          else
-            git add unknown-windows.zip
-          fi
+          pyinstaller --onefile --windowed unknown.py
+          zip -j unknown-${{ runner.os == 'Linux' && 'linux' || 'macos' }}.zip dist/unknown
 
-      - name: Commit updated executables
+      - name: Build executable (Windows)
+        if: runner.os == 'Windows'
         run: |
-          git commit -m "Update cross-platform executables" || echo "No changes to commit"
+          pyinstaller --onefile --windowed unknown.py
+          powershell Compress-Archive -Path dist\unknown.exe -DestinationPath unknown-windows.zip
 
+      # Upload artifact (one per OS)
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: unknown-${{ runner.os }}       # linux, windows, macos
-          path: |
-            unknown-linux.zip
-            unknown-windows.zip
-            unknown-macos.zip
+          name: unknown-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'macos' || 'windows' }}
+          path: ${{ runner.os == 'Linux' && 'unknown-linux.zip' || runner.os == 'macOS' && 'unknown-macos.zip' || 'unknown-windows.zip' }}
