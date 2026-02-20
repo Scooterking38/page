@@ -49,10 +49,16 @@ def press_number(digit):
         _w1.Entry3.config(text=str(_w1.Entry3.cget('text'))+digit)
 def press_operator(op):
     _w1.Entry2.config(text=str(op))
+    global field
+    field = 2
 def calc():
     ans = operate(_w1.Entry1.cget('text'),_w1.Entry2.cget('text'),_w1.Entry3.cget('text'))
-    print(ans)
+    _w1.Entry1.config(text='')
+    _w1.Entry2.config(text='')
+    _w1.Entry3.config(text='')
     _w1.Label4.config(text=ans)
+    global field
+    field = 1
 def num1():
     global field
     field = 1
