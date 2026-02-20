@@ -1,0 +1,68 @@
+name: Build Cross-Platform Executables
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Cache Python packages
+        uses: actions/cache@v3
+        with:
+          path: ${{ runner.os == 'windows-latest' && '%LOCALAPPDATA%\\pip\\Cache' || runner.os == 'macos-latest' && '~/Library/Caches/pip' || '~/.cache/pip' }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Install dependencies
+        run: pip install --upgrade pip pyinstaller
+
+      - name: Remove old executables
+        run: |
+          rm -f unknown-linux.zip unknown-windows.zip unknown-macos.zip || true
+
+      - name: Build executable
+        run: |
+          if [[ "${{ runner.os }}" == "Linux" ]]; then
+            pyinstaller --onefile --windowed unknown.py
+            zip -j unknown-linux.zip dist/unknown
+          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+            pyinstaller --onefile --windowed unknown.py
+            zip -j unknown-macos.zip dist/unknown
+          else
+            pyinstaller --onefile --windowed unknown.py
+            powershell Compress-Archive -Path dist\unknown.exe -DestinationPath unknown-windows.zip
+          fi
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Stage all new zips
+        run: |
+          git add unknown-linux.zip unknown-windows.zip unknown-macos.zip
+
+      - name: Commit updated executables
+        run: |
+          git commit -m "Update cross-platform executables" || echo "No changes to commit"
+
+      - name: Push changes
+        run: git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
