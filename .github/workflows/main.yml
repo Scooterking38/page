@@ -34,7 +34,11 @@ jobs:
 
       - name: Remove old executables
         run: |
-          rm -f unknown-linux.zip unknown-windows.zip unknown-macos.zip || true
+          if [[ "${{ runner.os }}" == "Linux" ]] || [[ "${{ runner.os }}" == "macOS" ]]; then
+            rm -f unknown-linux.zip unknown-windows.zip unknown-macos.zip || true
+          else
+            Remove-Item -Path "unknown-linux.zip","unknown-windows.zip","unknown-macos.zip" -Force -ErrorAction SilentlyContinue
+          fi
 
       - name: Build executable
         run: |
