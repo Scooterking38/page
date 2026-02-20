@@ -13,49 +13,35 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.12
 
       - name: Install dependencies
         run: pip install --upgrade pip pyinstaller
 
-      # Remove old builds (OS-specific)
-      - name: Remove old executables (Linux/macOS)
+      # Build Linux/macOS
+      - name: Build (Linux/macOS)
         if: runner.os != 'Windows'
-        run: rm -f unknown-linux.zip unknown-macos.zip unknown-windows.zip || true
+        run: pyinstaller --onefile --windowed unknown.py
 
-      - name: Remove old executables (Windows)
-        if: runner.os == 'Windows'
-        run: Remove-Item -Path "unknown-linux.zip","unknown-windows.zip","unknown-macos.zip" -Force -ErrorAction SilentlyContinue
-
+      - name: Upload (Linux/macOS)
         if: runner.os != 'Windows'
-        run: |
-          pyinstaller --onefile --windowed unknown.py
-      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: unknown-${{ runner.os == 'Linux' && 'linux' || 'macos' }}
-          path: dist/unknown   # single file
+          path: dist/unknown
 
-      # Windows
-      - name: Build executable (Windows)
+      # Build Windows
+      - name: Build (Windows)
         if: runner.os == 'Windows'
-        run: |
-          pyinstaller --onefile --windowed unknown.py
-      - name: Upload artifact
+        run: pyinstaller --onefile --windowed unknown.py
+
+      - name: Upload (Windows)
+        if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: unknown-windows
-          path: dist\unknown.exe   # single file
-
-      # Upload artifact (one per OS)
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: unknown-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'macos' || 'windows' }}
-          path: ${{ runner.os == 'Linux' && 'unknown-linux.zip' || runner.os == 'macOS' && 'unknown-macos.zip' || 'unknown-windows.zip' }}
+          path: dist/unknown.exe
