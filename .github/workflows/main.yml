@@ -71,7 +71,11 @@ jobs:
         run: |
           git commit -m "Update cross-platform executables" || echo "No changes to commit"
 
-      - name: Push changes
-        run: |
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
-          git push origin HEAD
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: built-executables
+          path: |
+            unknown-linux.zip
+            unknown-windows.zip
+            unknown-macos.zip
