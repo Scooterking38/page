@@ -27,12 +27,13 @@ def main(*args):
     root.mainloop()
 
 def login_btn_command(*args):
+    global w
     username = w.username_entry.get()
     password = w.password_entry.get()
     if username == 'scooterking38' and password == 'hello':
         w.result_label.config(text='yes')
     else:
-        w.result_label.config(config='no')
+        w.result_label.config(text='no')
 
 if __name__ == '__main__':
     unknown.start_up()
